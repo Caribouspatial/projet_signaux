@@ -30,16 +30,16 @@ def transformationAscii(t):
     return arrayAscii
 
 
-transformationAscii(t)
+
 # fonction de création de l'array du texte en binaire en fonction de la valence
 # fonction de transformation de l'array en .wav, utiliser bibliothèque wave
 
 
 # fonction pour jouer le .wav
 
-"""# fonction de code gray
-def gray(i): # décalage de 1 avec XOR
-    return i ^ (i >> 1)"""
+# test a enlever
+transformationAscii(t)
+
 
 #toutefin/optionnel
 #fonction changement du texte en lowercase et é,è,E -> e
