@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt # débug
 Fmin = 500 #Hz
 Fmax = 8000 #Hz
 espacement = 0.5 # seconde
-duree_lettre = 0.5 #seconde
+duree_lettre = 0.5 # seconde
 
 #valence [2,4,8,16]
 # table fréquences par caractère
-table_lettre = {
+table_lettre_encodage = {
     " " : 500,
     "a" : 700,
     "b" : 900,
