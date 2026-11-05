@@ -4,8 +4,8 @@ import math
 import sys
 import wave #pour écrire les fichiers .wav
 
-#import numpy as np #calculs
-#import matplotlib.pyplot as plt # débug
+import numpy as np #calculs
+import matplotlib.pyplot as plt # débug
 
 #python encoder.py encoder "texte" --m 4 -> ligne de code pour lancer encoder.py
 
@@ -19,7 +19,9 @@ valence = 4
 
 
 t = "test0123"
-######Fonction
+
+###### Fonctions
+
 # fonction qui demande d'écrire le texte que l'on veut, puis de choisir une valence
 
 def demandeTexte():
@@ -51,23 +53,21 @@ def bits_par_symbole(valence):
     return k 
 
 # fonction de transformation en binaire (selon standard ascii), du texte
-def transformationAscii(t):
-    arrayAscii = []
+def transformationascii(t):
+    arrayascii = []
     for c in t:
-        arrayAscii.append(f"{ord(c):08b}")
-    return arrayAscii
+        arrayascii.append(f"{ord(c):08b}")
+    return arrayascii
 
-
-transformationAscii(t)
 # fonction de création de l'array du texte en binaire en fonction de la valence
 # fonction de transformation de l'array en .wav, utiliser bibliothèque wave
 
 
 # fonction pour jouer le .wav
 
-"""# fonction de code gray
-def gray(i): # décalage de 1 avec XOR
-    return i ^ (i >> 1)"""
+# test a enlever
+transformationascii(t)
+
 
 #toutefin/optionnel
 #fonction changement du texte en lowercase et é,è,E -> e
