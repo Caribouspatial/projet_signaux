@@ -120,7 +120,7 @@ def creation_array(arrayascii, valence, k):
     return (amplitude * np.concatenate(morceaux)).astype(np.float32)
 
 # fonction de transformation de array en .wav, utiliser bibliothèque wave
-
+# ATT remplacer le chemin par celui correspondant sur votre PC
 def array_vers_wav(array, nom_fichier="message.wav"):
     chemin = os.path.join('/Users/user/Desktop/BLOC3/SignauxIII/m-fsk/messages', nom_fichier) # le dossier /messages existe déjà
     pcm = (np.clip(array, -1, 1) * 32767).astype("<i2") # float -> entiers 16 bits
