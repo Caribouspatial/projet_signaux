@@ -14,18 +14,11 @@ Fmin = 500 # Hz
 Fmax = 8000 # Hz
 espacement = 0.5 # seconde
 duree_lettre = 0.5 # seconde
-valence = 4
-
-
-
-t = "test0123"
 
 ###### Fonctions
-
 # fonction qui demande d'écrire le texte que l'on veut, puis de choisir une valence
-
 def demandeTexte():
-    k = 0
+    k = int
     texte = input("Veuillez entrer le texte à encoder : ")
     valence = int(input("Veuillez entrer la valence (multiple de 2) : "))
     if valence < 2:
@@ -39,8 +32,8 @@ def demandeTexte():
         return demandeTexte()
     try:
         k = bits_par_symbole(valence)
-    except ValueError as e:
-        print(e)
+    except ValueError as erreur:
+        print(erreur)
         return demandeTexte()
     return texte, valence, k
 
@@ -53,28 +46,21 @@ def bits_par_symbole(valence):
     return k 
 
 # fonction de transformation en binaire (selon standard ascii), du texte
+
 def transformationascii(t):
     arrayascii = []
     for c in t:
         arrayascii.append(f"{ord(c):08b}")
     return arrayascii
 
-# fonction de création de l'array du texte en binaire en fonction de la valence
-# fonction de transformation de l'array en .wav, utiliser bibliothèque wave
+# fonction de création de array du texte du code ascii vers le binaire en fonction de la valence
 
+# fonction de transformation de array en .wav, utiliser bibliothèque wave
 
 # fonction pour jouer le .wav
 
-# test a enlever
-transformationascii(t)
 
 
-#toutefin/optionnel
+
+#optionnel
 #fonction changement du texte en lowercase et é,è,E -> e
-
-texte, valence, k = demandeTexte()
-texte_binaire = transformationAscii(texte)
-print("Texte en binaire : ", texte_binaire, valence, k)
-
-
-
