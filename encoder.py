@@ -10,7 +10,7 @@ Fmin = 500 # Hz
 Fmax = 8000 # Hz
 espacement = 0.5 # seconde : silence entre deux lettres
 duree_lettre = 0.5 # seconde : durée des tonalités d'une lettre
-fs = 44100 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
+fs = 44000 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
 amplitude = 0.8 # volume (0 à 1)
 rampe = 0.005 # seconde : fondu au début et à la fin de chaque tonalité (évite les clics)
 
