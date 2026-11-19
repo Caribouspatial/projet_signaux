@@ -15,7 +15,7 @@ amplitude = 0.8 # volume (0 à 1)
 rampe = 0.005 # seconde : fondu au début et à la fin de chaque tonalité (évite les clics)
 
 """
-Structure du .wav (pour le décodage) :
+Structure du .wav :
 
 Chaque symbole (= une tonalité) dure Ts secondes, quelle que soit la valence
 Une lettre contient ceil(8 / k) symboles, un par groupe de k bits (de gauche à droite)
@@ -132,6 +132,7 @@ def creation_array(arrayascii, valence, k):
 
 # fonction de transformation de array en .wav, utiliser bibliothèque wave
 # ATT remplacer le chemin par celui correspondant sur votre PC
+
 def array_vers_wav(array, nom_fichier="message.wav"):
     dossier_messages = os.path.join(os.path.dirname(os.path.abspath(__file__)), "messages")
     os.makedirs(dossier_messages, exist_ok=True)
