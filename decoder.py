@@ -11,7 +11,7 @@ import math
 import numpy as np
 from scipy.io import wavfile
 
-# --- mêmes valeurs que dans encoder.py ---
+# valeurs fixe
 FMIN = 500.0
 FMAX = 8000.0
 DUREE_LETTRE = 0.5
