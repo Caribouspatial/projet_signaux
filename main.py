@@ -18,10 +18,10 @@ if choix == "1":
 
 elif choix == "2":
     valence = int(input("Valence utilisée à l'encodage (2, 4, 8, 16, 32) : "))
-    print("Texte décodé :", decoder.decoder_wav("messages/message.wav", valence))
+    print("Texte décodé :", decoder.decoder("messages/message.wav", valence))
 
 elif choix == "3":
-    jouer.jouer("messages/messages.wav")
+    jouer.jouer("messages/message.wav")
 
 elif choix == "4":
     print("enregistrer")

@@ -1,21 +1,36 @@
-"""Décode un .wav encodé en M-FSK (voir encoder.py) et renvoie le texte.
+#!/usr/bin/env python3
 
-Pour chaque lettre i (début à t = i * (DUREE_LETTRE + ESPACEMENT)) :
-  1. on découpe la lettre en ceil(8 / k) tonalités de même durée
-  2. pour chaque tonalité : FFT, fréquence dominante
-  3. fréquence théorique la plus proche dans linspace(FMIN, FMAX, valence) -> indice
-  4. indice écrit en binaire sur k bits ; on concatène, on garde 8 bits -> un caractère
-"""
+import argparse
 import math
-
 import numpy as np
 from scipy.io import wavfile
+"""Décode un message.wav encodé en M-FSK (voir l'encodeur) et affiche le texte.
+
+Principe, pour chaque lettre i (début à t = i * (ceil(8 / k) * TS + ESPACEMENT)) :
+  1. on découpe la lettre en ceil(8 / k) tonalités de durée TS chacune
+  2. pour chaque tonalité, on fait une FFT et on prend la fréquence dominante
+  3. on cherche la fréquence la plus proche dans linspace(FMIN, FMAX, valence) -> son indice
+  4. l'indice est écrit en binaire sur k bits ; on concatène, on garde 8 bits -> un caractère
+
+Usage :
+    python decoder.py --valence 4
+    python decoder.py --fichier autre.wav --valence 16
+Sous Jupyter/IPython : modifier FICHIER_DEFAUT et VALENCE_DEFAUT ci-dessous.
+"""
 
 # valeurs fixe
 FMIN = 500.0
 FMAX = 8000.0
-DUREE_LETTRE = 0.5
+TS = 0.06  # durée d'UN symbole : doit être identique à Ts de encoder.py
 ESPACEMENT = 0.5
+
+FICHIER_DEFAUT = "messages/message.wav"
+VALENCE_DEFAUT = 4  # doit être la valence utilisée à l'encodage
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--fichier", default=FICHIER_DEFAUT)
+parser.add_argument("--valence", type=int, default=VALENCE_DEFAUT)
+args, _ = parser.parse_known_args()  # ignore les arguments ajoutés par Jupyter
 
 
 def frequence_dominante(segment, fs):
@@ -26,7 +41,7 @@ def frequence_dominante(segment, fs):
     return np.argmax(spectre) * fs / n_fft
 
 
-def decoder_wav(fichier, valence):
+def decoder(fichier, valence):
     k = int(round(math.log2(valence)))
     if valence < 2 or 2 ** k != valence:
         raise ValueError("La valence doit être une puissance de 2 (2, 4, 8, 16, 32)")
@@ -37,13 +52,13 @@ def decoder_wav(fichier, valence):
     data = data.astype(np.float64)
 
     frequences = np.linspace(FMIN, FMAX, valence)
-    nb_lettre = int(round(DUREE_LETTRE * fs))  # échantillons par lettre
-    pas = int(round((DUREE_LETTRE + ESPACEMENT) * fs))  # début d'une lettre -> début de la suivante
     nb_symboles = math.ceil(8 / k)
-    nb_symbole = nb_lettre // nb_symboles  # échantillons par tonalité
+    nb_symbole = int(round(TS * fs))  # échantillons par tonalité (même calcul que l'encodeur)
+    nb_lettre = nb_symboles * nb_symbole  # échantillons par lettre (dépend maintenant de la valence)
+    pas = nb_lettre + int(round(ESPACEMENT * fs))  # début d'une lettre -> début de la suivante
     marge = int(0.2 * nb_symbole)  # on ignore les bords (fondus, transitions)
 
-    nb_lettres = int(round((len(data) / fs + ESPACEMENT) / (DUREE_LETTRE + ESPACEMENT)))
+    nb_lettres = int(round((len(data) + int(round(ESPACEMENT * fs))) / pas))
     texte = ""
     for i in range(nb_lettres):
         bits = ""
@@ -51,7 +66,12 @@ def decoder_wav(fichier, valence):
             debut = i * pas + j * nb_symbole
             segment = data[debut + marge: debut + nb_symbole - marge]
             f = frequence_dominante(segment, fs)
-            indice = int(np.argmin(np.abs(frequences - f)))
+            indice = int(np.argmin(np.abs(frequences - f)))  # fréquence théorique la plus proche
             bits += f"{indice:0{k}b}"
-        texte += chr(int(bits[:8], 2))  # bits[:8] retire le remplissage de 0 (valence 8 ou 32)
+        bits = bits[:8]  # retire le remplissage de 0 (valence 8 ou 32)
+        texte += chr(int(bits, 2))
     return texte
+
+
+if __name__ == "__main__":
+    print(decoder(args.fichier, args.valence))

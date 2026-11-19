@@ -9,16 +9,18 @@ import matplotlib.pyplot as plt # débug
 Fmin = 500 # Hz
 Fmax = 8000 # Hz
 espacement = 0.5 # seconde : silence entre deux lettres
-duree_lettre = 0.5 # seconde : durée des tonalités d'une lettre
+Ts = 0.06 # seconde : durée d'UN symbole (fixe, indépendante de la valence)
 fs = 44000 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
 amplitude = 0.8 # volume (0 à 1)
 rampe = 0.005 # seconde : fondu au début et à la fin de chaque tonalité (évite les clics)
 
 """
-Structure du .wav (pour le décodage) :
+Structure du .wav :
 
-La lettre numéro i (la première = 0) commence à t = i * (duree_lettre + espacement) secondes
-Elle contient (8 / k) tonalités de même durée, une par groupe de k bits (de gauche à droite)
+Chaque symbole (= une tonalité) dure Ts secondes, quelle que soit la valence
+Une lettre contient ceil(8 / k) symboles, un par groupe de k bits (de gauche à droite)
+Durée d'une lettre = ceil(8 / k) * Ts  -> elle diminue quand la valence augmente (c'est le gain de débit)
+La lettre numéro i (la première = 0) commence à t = i * (ceil(8 / k) * Ts + espacement) secondes
 La fréquence d'une tonalité = frequences[valeur du groupe], avec frequences = linspace(Fmin, Fmax, valence)
 Si 8 n'est pas un multiple de k (valence 8 ou 32), le dernier groupe est complété par des 0 à droite
 Entre deux lettres : silence de durée "espacement" (pas de silence après la dernière lettre)
@@ -64,6 +66,17 @@ def bits_par_symbole(valence):
         raise ValueError("La valence doit être une puissance de 2 (2, 4, 8, 16, 32...)")
     return k
 
+# fonction qui calcule le débit binaire théorique pour une valence donnée
+# débit pendant les tonalités = k / Ts (bits par seconde)
+# débit effectif = 8 bits / (durée d'une lettre + silence entre lettres)
+
+def debits(valence):
+    k = bits_par_symbole(valence)
+    nb_symboles = math.ceil(8 / k)
+    debit_tonalites = k / Ts
+    debit_effectif = 8 / (nb_symboles * Ts + espacement)
+    return debit_tonalites, debit_effectif
+
 # fonction de transformation en code ascii binaire, du texte
 
 def transformationascii(t):
@@ -90,7 +103,7 @@ def creation_array(arrayascii, valence, k):
     if Fmax >= fs / 2:
         raise ValueError(f"Fmax doit être inférieure à fs/2 = {fs / 2:.0f} Hz")
     frequences = np.linspace(Fmin, Fmax, valence) # une fréquence par valeur possible d'un groupe de bits
-    nb_lettre = int(round(duree_lettre * fs)) # échantillons occupés par une lettre
+    nb_symbole = int(round(Ts * fs)) # échantillons occupés par UN symbole (identique pour toutes les valences)
     silence = np.zeros(int(round(espacement * fs)))
 
     lettres = []
@@ -99,7 +112,6 @@ def creation_array(arrayascii, valence, k):
             raise ValueError(f"le mot {mot} ne fait pas 8 bits")
 
         symboles = decoupage_symboles(mot, k)
-        nb_symbole = nb_lettre // len(symboles) # échantillonage
         t = np.arange(nb_symbole) / fs
         enveloppe = np.ones(nb_symbole) # fondu d'entrée et de sortie : évite les clics de transistions
         r = min(int(rampe * fs), nb_symbole // 2)
@@ -109,7 +121,6 @@ def creation_array(arrayascii, valence, k):
             enveloppe[-r:] = fondu[::-1]
 
         lettre = np.concatenate([np.sin(2 * np.pi * frequences[s] * t) * enveloppe for s in symboles])
-        lettre = np.pad(lettre, (0, nb_lettre - len(lettre))) # durée exacte : chaque lettre a la même longueur
         lettres.append(lettre)
 
     morceaux = [] # lettre, silence, lettre, silence, ..., lettre
@@ -120,8 +131,12 @@ def creation_array(arrayascii, valence, k):
     return (amplitude * np.concatenate(morceaux)).astype(np.float32)
 
 # fonction de transformation de array en .wav, utiliser bibliothèque wave
+# ATT remplacer le chemin par celui correspondant sur votre PC
+
 def array_vers_wav(array, nom_fichier="message.wav"):
-    chemin = os.path.join(os.path.dirname(__file__), "messages", nom_fichier)
+    dossier_messages = os.path.join(os.path.dirname(os.path.abspath(__file__)), "messages")
+    os.makedirs(dossier_messages, exist_ok=True)
+    chemin = os.path.join(dossier_messages, nom_fichier)
     pcm = (np.clip(array, -1, 1) * 32767).astype("<i2") # float -> entiers 16 bits
     with wave.open(chemin, "wb") as fichier:
         fichier.setnchannels(1) # mono
