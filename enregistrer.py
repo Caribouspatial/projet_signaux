@@ -9,7 +9,6 @@ DURATION = 40         # Durée maximale en secondes
 OUTPUT_FILE = "messages/enregistrement.wav"
 
 def enregistrer():
-    print("Enregistrement en cours...")
     print(f"Appuyez sur Entrée pour arrêter (maximum {DURATION} secondes).")
 
     chunks = []
