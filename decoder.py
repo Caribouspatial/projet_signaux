@@ -7,10 +7,11 @@ Pour chaque lettre i (début à t = i * (DUREE_LETTRE + ESPACEMENT)) :
   4. indice écrit en binaire sur k bits ; on concatène, on garde 8 bits -> un caractère
 """
 import math
+
 import numpy as np
 from scipy.io import wavfile
 
-# valeurs fixe
+# --- mêmes valeurs que dans encoder.py ---
 FMIN = 500.0
 FMAX = 8000.0
 DUREE_LETTRE = 0.5
@@ -18,7 +19,7 @@ ESPACEMENT = 0.5
 
 
 def frequence_dominante(segment, fs):
-    """Fréquence du pic du spectre (fenêtre de Hann et zero-padding pour affiner)."""
+    """Fréquence du pic du spectre (fenêtre de Hann + zero-padding pour affiner)."""
     segment = segment * np.hanning(len(segment))
     n_fft = 1 << max(16, int(math.ceil(math.log2(len(segment)))))
     spectre = np.abs(np.fft.rfft(segment, n=n_fft))
@@ -27,9 +28,9 @@ def frequence_dominante(segment, fs):
 
 def decoder_wav(fichier, valence):
     k = int(round(math.log2(valence)))
-
     if valence < 2 or 2 ** k != valence:
         raise ValueError("La valence doit être une puissance de 2 (2, 4, 8, 16, 32)")
+
     fs, data = wavfile.read(fichier)
     if data.ndim > 1:  # stéréo -> mono
         data = data.mean(axis=1)
