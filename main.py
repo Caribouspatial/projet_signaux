@@ -30,10 +30,8 @@ elif choix == "3":
 
     choix2 = input('\nTaper "1" pour jouer le message, "2" pour enregistrement : ')
     if choix2 == "1":
-        valence = int(input("Valence utilisée à l'encodage (2, 4, 8, 16, 32) : "))
         jouer.jouer("messages/message.wav")
     elif choix2 == "2":
-        valence = int(input("Valence utilisée à l'encodage (2, 4, 8, 16, 32) : "))
         jouer.jouer("messages/enregistrement.wav")
     else:
         print('erreur, taper "1" ou "2"')
