@@ -121,7 +121,7 @@ def creation_array(arrayascii, valence, k):
 
 # fonction de transformation de array en .wav, utiliser bibliothèque wave
 def array_vers_wav(array, nom_fichier="message.wav"):
-    chemin = os.path.join(os.path.dirname(__file__), "..", "messages", nom_fichier)
+    chemin = os.path.join(os.path.dirname(__file__), "messages", nom_fichier)
     pcm = (np.clip(array, -1, 1) * 32767).astype("<i2") # float -> entiers 16 bits
     with wave.open(chemin, "wb") as fichier:
         fichier.setnchannels(1) # mono
