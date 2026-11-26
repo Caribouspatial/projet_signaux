@@ -10,21 +10,9 @@ Fmin = 500 # Hz
 Fmax = 8000 # Hz
 espacement = 0.5 # seconde : silence entre deux lettres
 Ts = 0.06 # seconde : durée d'UN symbole (fixe, indépendante de la valence)
-fs = 44100 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
+fs = 44000 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
 amplitude = 0.8 # volume (0 à 1)
 rampe = 0.005 # seconde : fondu au début et à la fin de chaque tonalité (évite les clics)
-
-"""
-Structure du .wav :
-
-Chaque symbole (= une tonalité) dure Ts secondes, quelle que soit la valence
-Une lettre contient ceil(8 / k) symboles, un par groupe de k bits (de gauche à droite)
-Durée d'une lettre = ceil(8 / k) * Ts  -> elle diminue quand la valence augmente (c'est le gain de débit)
-La lettre numéro i (la première = 0) commence à t = i * (ceil(8 / k) * Ts + espacement) secondes
-La fréquence d'une tonalité = frequences[valeur du groupe], avec frequences = linspace(Fmin, Fmax, valence)
-Si 8 n'est pas un multiple de k (valence 8 ou 32), le dernier groupe est complété par des 0 à droite
-Entre deux lettres : silence de durée "espacement" (pas de silence après la dernière lettre)
-"""
 
 ###### Fonctions
 # fonction qui demande d'écrire le texte que l'on veut, puis de choisir une valence

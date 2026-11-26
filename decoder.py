@@ -4,19 +4,6 @@ import argparse
 import math
 import numpy as np
 from scipy.io import wavfile
-"""Décode un message.wav encodé en M-FSK (voir l'encodeur) et affiche le texte.
-
-Principe, pour chaque lettre i (début à t = i * (ceil(8 / k) * TS + ESPACEMENT)) :
-  1. on découpe la lettre en ceil(8 / k) tonalités de durée TS chacune
-  2. pour chaque tonalité, on fait une FFT et on prend la fréquence dominante
-  3. on cherche la fréquence la plus proche dans linspace(FMIN, FMAX, valence) -> son indice
-  4. l'indice est écrit en binaire sur k bits ; on concatène, on garde 8 bits -> un caractère
-
-Usage :
-    python decoder.py --valence 4
-    python decoder.py --fichier autre.wav --valence 16
-Sous Jupyter/IPython : modifier FICHIER_DEFAUT et VALENCE_DEFAUT ci-dessous.
-"""
 
 # valeurs fixe
 FMIN = 500.0

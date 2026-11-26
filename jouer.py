@@ -3,8 +3,6 @@ import numpy as np
 import sounddevice as sd
 
 def jouer(chemin):
-    """Joue un .wav 16 bits et attend la fin de la lecture."""
-
     with wave.open(chemin, "rb") as wf:
         channels = wf.getnchannels()
         sample_rate = wf.getframerate()  # lu dans le fichier (44000 Hz pour l'encodeur)

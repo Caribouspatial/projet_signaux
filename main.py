@@ -12,6 +12,7 @@ if choix == "1":
     texte_binaire = encoder.transformationascii(texte)
     array = encoder.creation_array(texte_binaire, valence, k)
     encoder.array_vers_wav(array)
+
     print("Texte en binaire : ", texte_binaire, valence, k)
     print("Fréquences (Hz) :", np.linspace(Fmin, Fmax, valence))
     print(f"message.wav écrit : {len(array)} échantillons, {len(array) / fs:.1f} s")

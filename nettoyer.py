@@ -1,20 +1,4 @@
-"""
-nettoyer.py : nettoie un enregistrement micro pour que decoder.py puisse le lire.
-
-nettoyer(fichier) remplace le fichier par sa version nettoyée.
-Si aucun son n'est détecté, le fichier n'est PAS touché (rien n'est écrit, rien n'est copié)
-et la fonction renvoie False.
-
-Étapes (le signal n'est modifié que légèrement) :
-  1. stéréo -> mono, suppression de la composante continue
-  2. filtre passe-bande autour des fréquences utiles (FMIN..FMAX), sans déphasage
-  3. détection de l'activité (enveloppe) et mise à zéro des silences (bruit, échos)
-  4. recalage : le début du 1er son est placé à t = 0 (le décodeur suppose que le message
-     commence à 0 s), la fin est coupée juste après le dernier son
-  5. normalisation de l'amplitude
-"""
 import os
-
 import numpy as np
 from scipy.io import wavfile
 from scipy.signal import butter, sosfiltfilt, hilbert, medfilt
@@ -31,13 +15,10 @@ def _ms(x, fs):
     return int(round(x * fs / 1000))
 
 
-def _lisser(x, n):
-    """Moyenne glissante de n échantillons."""
+def _lisser(x, n): # Moyenne coulissnates de n échantillon
     return np.convolve(x, np.ones(n) / n, mode="same")
 
-
-def _traiter(data, fs, decalage_ms=0.0):
-    """Renvoie le signal nettoyé (int16) ou None si aucun son n'est détecté."""
+def _traiter(data, fs, decalage_ms=0.0): # Renvoie le signal nettoyé (int16) ou None si aucun son n'est détecté.
     data = data.astype(np.float64)
     if data.ndim > 1:  # stéréo -> mono
         data = data.mean(axis=1)
@@ -45,12 +26,12 @@ def _traiter(data, fs, decalage_ms=0.0):
         return None
     data = data - data.mean()
 
-    # 1) passe-bande (zéro déphasage : ne décale pas les débuts de sons)
+    #passe-bande (sans déphasage : ne décale pas les débuts de sons)
     haut = min(FMAX * 1.15, fs / 2 * 0.95)
     sos = butter(6, [FMIN * 0.7, haut], btype="bandpass", fs=fs, output="sos")
     filtre = sosfiltfilt(sos, data)
 
-    # 2) enveloppe et seuil
+    #enveloppe et seuil
     env = _lisser(np.abs(hilbert(filtre)), _ms(5, fs))
     plancher = np.percentile(env, 20)   # bruit de fond
     crete = np.percentile(env, 99)      # niveau des sons
@@ -87,7 +68,7 @@ def _traiter(data, fs, decalage_ms=0.0):
     t1 = debut_z + int(len(zone) - 1 - np.argmax((zone > 0.5 * palier_f)[::-1]))
     t1 = min(len(filtre), t1 + _ms(100, fs))  # marge : le dernier son (500 Hz) est faible
 
-    # 4) mise à zéro des silences (fondu de 5 ms) puis recalage
+    # mise à zéro des silences (fondu de 5 ms)
     masque = np.zeros(len(filtre))
     for a, b in zip(debuts, fins):
         masque[max(0, a - _ms(25, fs)): b + _ms(120, fs)] = 1.0
@@ -96,7 +77,7 @@ def _traiter(data, fs, decalage_ms=0.0):
     if len(propre) == 0 or np.max(np.abs(propre)) == 0:
         return None
 
-    # 5) normalisation (crête à 90 % du maximum int16)
+    # normalisation (crête à 90 % du maximum int16)
     propre = propre * (0.9 * 32767 / np.max(np.abs(propre)))
     return propre.astype(np.int16), len(debuts), t0 / fs, t1 / fs
 
@@ -121,12 +102,3 @@ def nettoyer(fichier, decalage_ms=0.0):
     print(f"Enregistrement nettoyé : {nb_lettres} lettres, son de {t0:.2f} s à {t1:.2f} s "
           f"-> durée {len(propre) / fs:.2f} s")
     return True
-
-
-if __name__ == "__main__":
-    import argparse
-    p = argparse.ArgumentParser(description="Nettoie un .wav sur place (intact si aucun son).")
-    p.add_argument("fichier")
-    p.add_argument("--decalage", type=float, default=0.0, help="correction manuelle du début, en ms")
-    a = p.parse_args()
-    nettoyer(a.fichier, a.decalage)
