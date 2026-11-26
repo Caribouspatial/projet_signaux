@@ -48,7 +48,7 @@ class EncoderTests(unittest.TestCase):
             effectif,
             8 / (math.ceil(8 / 2) * encoder.Ts + encoder.espacement),
         )
-        
+
     def test_created_array_size_and_amplitude(self):
         valence = 4
         k = encoder.bits_par_symbole(valence)
@@ -67,6 +67,42 @@ class EncoderTests(unittest.TestCase):
         self.assertEqual(audio.dtype, np.float32)
         self.assertGreaterEqual(float(audio.min()), -1.0)
         self.assertLessEqual(float(audio.max()), 1.0)
+
+class WavAndDecoderTests(unittest.TestCase):
+    def test_wav_round_trip_decodes_message(self):
+        texte = "ABC"
+        valence = 4
+        k = encoder.bits_par_symbole(valence)
+        binary = encoder.transformationascii(texte)
+        audio = encoder.creation_array(binary, valence, k)
+
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "test_message.wav")
+            pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2")
+            with wave.open(wav_path, "wb") as fichier:
+                fichier.setnchannels(1)
+                fichier.setsampwidth(2)
+                fichier.setframerate(encoder.fs)
+                fichier.writeframes(pcm.tobytes())
+
+            self.assertEqual(decoder.decoder(wav_path, valence), texte)
+
+    def test_array_vers_wav_writes_valid_mono_wav(self):
+        audio = np.zeros(1000, dtype=np.float32)
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "encoder_test.wav")
+            encoder.array_vers_wav(audio, wav_path)
+
+            with wave.open(wav_path, "rb") as fichier:
+                self.assertEqual(fichier.getnchannels(), 1)
+                self.assertEqual(fichier.getsampwidth(), 2)
+                self.assertEqual(fichier.getframerate(), encoder.fs)
+                self.assertEqual(fichier.getnframes(), len(audio))
+
+    def test_decoder_rejects_non_power_of_two(self):
+        with self.assertRaises(ValueError):
+            decoder.decoder("missing.wav", 6)
+
 
 if __name__ == "__main__":
     unittest.main()
