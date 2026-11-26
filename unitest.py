@@ -105,6 +105,29 @@ class WavAndDecoderTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             decoder.decoder("missing.wav", 6)
 
+    def test_decoder_ignores_empty_trailing_letter_segment(self):
+        valence = 4
+        audio = encoder.creation_array(
+            encoder.transformationascii("AB"),
+            valence,
+            encoder.bits_par_symbole(valence),
+        )
+        audio = np.concatenate((audio, np.zeros(int(0.45 * encoder.fs))))
+
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "trailing_silence.wav")
+            wavfile.write(
+                wav_path,
+                encoder.fs,
+                (audio * 32767).astype(np.int16),
+            )
+
+            self.assertEqual(decoder.decoder(wav_path, valence), "AB")
+
+    def test_dominant_frequency_rejects_empty_segment(self):
+        with self.assertRaisesRegex(ValueError, "segment audio est vide"):
+            decoder.frequence_dominante(np.array([]), encoder.fs)
+
 
 class CleanerTests(unittest.TestCase):
     def test_silence_is_left_unchanged(self):
@@ -144,6 +167,74 @@ class CleanerTests(unittest.TestCase):
             self.assertLess(len(cleaned), len(signal))
             self.assertGreater(int(np.max(np.abs(cleaned))), 20000)
             self.assertFalse(os.path.exists(wav_path + ".tmp.wav"))
+
+    def test_weak_frequency_symbols_and_final_letter_are_preserved(self):
+        texte = "test bonjour"
+        valence = 4
+        k = encoder.bits_par_symbole(valence)
+        symboles_par_lettre = math.ceil(8 / k)
+        nb_echantillons_symbole = int(round(encoder.Ts * encoder.fs))
+        nb_silence = int(round(encoder.espacement * encoder.fs))
+        audio = encoder.creation_array(
+            encoder.transformationascii(texte), valence, k
+        ).copy()
+
+        for i, mot in enumerate(encoder.transformationascii(texte)):
+            debut_lettre = i * (
+                symboles_par_lettre * nb_echantillons_symbole + nb_silence
+            )
+            symboles = encoder.decoupage_symboles(mot, k)
+            for j, symbole in enumerate(symboles):
+                debut = debut_lettre + j * nb_echantillons_symbole
+                fin = debut + nb_echantillons_symbole
+                audio[debut:fin] *= {0: 0.07, 2: 0.0275}.get(symbole, 1.0)
+
+        debut_enregistrement = int(0.1 * encoder.fs)
+        enregistrement = np.pad(
+            audio,
+            (
+                debut_enregistrement,
+                60 * encoder.fs - debut_enregistrement - len(audio),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "weak_symbols.wav")
+            wavfile.write(
+                wav_path,
+                encoder.fs,
+                (enregistrement * 32767).astype(np.int16),
+            )
+
+            self.assertTrue(nettoyer.nettoyer(wav_path))
+            self.assertEqual(decoder.decoder(wav_path, valence), texte)
+
+    def test_short_message_in_long_recording_is_detected(self):
+        valence = 2
+        audio = encoder.creation_array(
+            encoder.transformationascii("A"),
+            valence,
+            encoder.bits_par_symbole(valence),
+        )
+        debut_enregistrement = int(0.1 * encoder.fs)
+        enregistrement = np.pad(
+            audio,
+            (
+                debut_enregistrement,
+                60 * encoder.fs - debut_enregistrement - len(audio),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "short_message.wav")
+            wavfile.write(
+                wav_path,
+                encoder.fs,
+                (enregistrement * 32767).astype(np.int16),
+            )
+
+            self.assertTrue(nettoyer.nettoyer(wav_path))
+            self.assertEqual(decoder.decoder(wav_path, valence), "A")
 
 
 if __name__ == "__main__":

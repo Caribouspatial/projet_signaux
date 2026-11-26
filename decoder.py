@@ -22,6 +22,8 @@ args, _ = parser.parse_known_args()  # ignore les arguments ajoutés par Jupyter
 
 def frequence_dominante(segment, fs):
     """Fréquence du pic du spectre (fenêtre de Hann + zero-padding pour affiner)."""
+    if len(segment) == 0:
+        raise ValueError("Le segment audio est vide.")
     segment = segment * np.hanning(len(segment))
     n_fft = 1 << max(16, int(math.ceil(math.log2(len(segment)))))
     spectre = np.abs(np.fft.rfft(segment, n=n_fft))
@@ -50,11 +52,18 @@ def decoder(fichier, valence):
     for i in range(nb_lettres):
         bits = ""
         for j in range(nb_symboles):
-            debut = i * pas + j * nb_symbole
-            segment = data[debut + marge: debut + nb_symbole - marge]
+            debut_brut = i * pas + j * nb_symbole + marge
+            fin_brut = i * pas + (j + 1) * nb_symbole - marge
+            debut = min(max(debut_brut, 0), len(data))
+            fin = min(max(fin_brut, debut), len(data))
+            segment = data[debut:fin]
+            if len(segment) < nb_symbole - 2 * marge:
+                break
             f = frequence_dominante(segment, fs)
             indice = int(np.argmin(np.abs(frequences - f)))  # fréquence théorique la plus proche
             bits += f"{indice:0{k}b}"
+        if len(bits) < 8:
+            break
         bits = bits[:8]  # retire le remplissage de 0 (valence 8 ou 32)
         texte += chr(int(bits, 2))
     return texte
