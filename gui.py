@@ -238,7 +238,7 @@ class SignauxGUI:
             )
             app.root.after(
                 0,
-                lambda erreur=erreur: (
+                lambda: (
                     app._texte_resultat(app.resultat_encode, resultat),
                     app.status.set("Encodage termine"),
                 ),
