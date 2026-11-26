@@ -13,10 +13,15 @@ Ts = 0.06 # seconde : durée d'UN symbole (fixe, indépendante de la valence)
 fs = 44100 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
 amplitude = 0.8 # volume (0 à 1)
 rampe = 0.005 # seconde : fondu au début et à la fin de chaque tonalité (évite les clics)
+marqueur_debut = 300 # Hz : fréquence réservée au marqueur de début
+marqueur_fin = 400 # Hz : fréquence réservée au marqueur de fin
+nb_symboles_marqueur = 3
 
 """
 Structure du .wav :
 
+Le message est encadré par trois tonalités de début et trois tonalités de fin,
+à des fréquences réservées qui ne sont pas utilisées pour les données.
 Chaque symbole (= une tonalité) dure Ts secondes, quelle que soit la valence
 Une lettre contient ceil(8 / k) symboles, un par groupe de k bits (de gauche à droite)
 Durée d'une lettre = ceil(8 / k) * Ts  -> elle diminue quand la valence augmente (c'est le gain de débit)
@@ -105,6 +110,13 @@ def creation_array(arrayascii, valence, k):
     frequences = np.linspace(Fmin, Fmax, valence) # une fréquence par valeur possible d'un groupe de bits
     nb_symbole = int(round(Ts * fs)) # échantillons occupés par UN symbole (identique pour toutes les valences)
     silence = np.zeros(int(round(espacement * fs)))
+    t = np.arange(nb_symbole) / fs
+    enveloppe = np.ones(nb_symbole)
+    r = min(int(rampe * fs), nb_symbole // 2)
+    if r > 0:
+        fondu = 0.5 * (1 - np.cos(np.pi * np.arange(r) / r))
+        enveloppe[:r] = fondu
+        enveloppe[-r:] = fondu[::-1]
 
     lettres = []
     for mot in arrayascii:
@@ -112,14 +124,6 @@ def creation_array(arrayascii, valence, k):
             raise ValueError(f"le mot {mot} ne fait pas 8 bits")
 
         symboles = decoupage_symboles(mot, k)
-        t = np.arange(nb_symbole) / fs
-        enveloppe = np.ones(nb_symbole) # fondu d'entrée et de sortie : évite les clics de transistions
-        r = min(int(rampe * fs), nb_symbole // 2)
-        if r > 0:
-            fondu = 0.5 * (1 - np.cos(np.pi * np.arange(r) / r))
-            enveloppe[:r] = fondu
-            enveloppe[-r:] = fondu[::-1]
-
         lettre = np.concatenate([np.sin(2 * np.pi * frequences[s] * t) * enveloppe for s in symboles])
         lettres.append(lettre)
 
@@ -128,7 +132,22 @@ def creation_array(arrayascii, valence, k):
         if i > 0:
             morceaux.append(silence)
         morceaux.append(lettre)
-    return (amplitude * np.concatenate(morceaux)).astype(np.float32)
+    donnees = np.concatenate(morceaux)
+
+    def marqueur(frequence):
+        tonalite = np.sin(2 * np.pi * frequence * t) * enveloppe
+        return np.tile(tonalite, nb_symboles_marqueur)
+
+    encadrement = np.concatenate(
+        [
+            marqueur(marqueur_debut),
+            silence,
+            donnees,
+            silence,
+            marqueur(marqueur_fin),
+        ]
+    )
+    return (amplitude * encadrement).astype(np.float32)
 
 # fonction de transformation de array en .wav, utiliser bibliothèque wave
 # ATT remplacer le chemin par celui correspondant sur votre PC

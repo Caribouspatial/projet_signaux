@@ -38,6 +38,8 @@ class EncoderTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 encoder.bits_par_symbole(valence)
 
+        with self.assertRaisesRegex(ValueError, "puissance de 2"):
+            decoder.decoder("missing.wav", 0)
         with self.assertRaises(ValueError):
             decoder.decoder("missing.wav", 3)
 
@@ -61,6 +63,8 @@ class EncoderTests(unittest.TestCase):
         expected_size = (
             len(binary) * symbols_per_letter * symbol_samples
             + (len(binary) - 1) * silence_samples
+            + 2 * encoder.nb_symboles_marqueur * symbol_samples
+            + 2 * silence_samples
         )
 
         self.assertEqual(audio.shape, (expected_size,))
@@ -69,16 +73,62 @@ class EncoderTests(unittest.TestCase):
         self.assertLessEqual(float(audio.max()), 1.0)
 
 class WavAndDecoderTests(unittest.TestCase):
-    def test_wav_round_trip_decodes_message(self):
+    def test_wav_round_trip_decodes_message_with_recording_silence(self):
         texte = "ABC"
         valence = 4
         k = encoder.bits_par_symbole(valence)
         binary = encoder.transformationascii(texte)
         audio = encoder.creation_array(binary, valence, k)
+        self.assertEqual(
+            decoder.trouver_marqueur(
+                audio, encoder.fs, decoder.FREQUENCE_MARQUEUR_DEBUT
+            ),
+            0,
+        )
 
         with tempfile.TemporaryDirectory() as dossier:
             wav_path = os.path.join(dossier, "test_message.wav")
-            pcm = (np.clip(audio, -1, 1) * 32767).astype("<i2")
+            recorded_audio = audio.copy()
+            marker_length = encoder.nb_symboles_marqueur * int(
+                round(encoder.Ts * encoder.fs)
+            )
+            recorded_audio[:marker_length] *= 0.02
+            recorded_audio[-marker_length:] *= 0.02
+            pcm = (np.clip(recorded_audio, -1, 1) * 32767).astype("<i2")
+            recording = np.concatenate(
+                [
+                    np.zeros(int(0.4 * encoder.fs), dtype="<i2"),
+                    pcm,
+                    np.zeros(int(0.7 * encoder.fs), dtype="<i2"),
+                ]
+            )
+            with wave.open(wav_path, "wb") as fichier:
+                fichier.setnchannels(1)
+                fichier.setsampwidth(2)
+                fichier.setframerate(encoder.fs)
+                fichier.writeframes(recording.tobytes())
+
+            self.assertEqual(decoder.decoder(wav_path, valence), texte)
+
+    def test_decoder_still_reads_legacy_unframed_wav(self):
+        texte = "OK"
+        valence = 4
+        k = encoder.bits_par_symbole(valence)
+        symbol_samples = int(round(encoder.Ts * encoder.fs))
+        silence = np.zeros(int(round(encoder.espacement * encoder.fs)))
+        frequencies = np.linspace(encoder.Fmin, encoder.Fmax, valence)
+        letters = []
+        for binary in encoder.transformationascii(texte):
+            tones = []
+            for value in encoder.decoupage_symboles(binary, k):
+                time = np.arange(symbol_samples) / encoder.fs
+                tones.append(np.sin(2 * np.pi * frequencies[value] * time))
+            letters.append(np.concatenate(tones))
+        legacy_audio = np.concatenate([letters[0], silence, letters[1]])
+
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "legacy.wav")
+            pcm = (legacy_audio * 32767).astype("<i2")
             with wave.open(wav_path, "wb") as fichier:
                 fichier.setnchannels(1)
                 fichier.setsampwidth(2)
@@ -102,6 +152,18 @@ class WavAndDecoderTests(unittest.TestCase):
     def test_decoder_rejects_non_power_of_two(self):
         with self.assertRaises(ValueError):
             decoder.decoder("missing.wav", 6)
+
+    def test_decoder_reports_silent_wav_clearly(self):
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "silence.wav")
+            with wave.open(wav_path, "wb") as fichier:
+                fichier.setnchannels(1)
+                fichier.setsampwidth(2)
+                fichier.setframerate(encoder.fs)
+                fichier.writeframes(np.zeros(encoder.fs, dtype="<i2").tobytes())
+
+            with self.assertRaisesRegex(ValueError, "Aucun signal audio"):
+                decoder.decoder(wav_path, 4)
 
 
 if __name__ == "__main__":
