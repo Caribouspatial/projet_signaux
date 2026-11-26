@@ -48,6 +48,25 @@ class EncoderTests(unittest.TestCase):
             effectif,
             8 / (math.ceil(8 / 2) * encoder.Ts + encoder.espacement),
         )
+        
+    def test_created_array_size_and_amplitude(self):
+        valence = 4
+        k = encoder.bits_par_symbole(valence)
+        binary = encoder.transformationascii("ABC")
+        audio = encoder.creation_array(binary, valence, k)
+
+        symbols_per_letter = math.ceil(8 / k)
+        symbol_samples = int(round(encoder.Ts * encoder.fs))
+        silence_samples = int(round(encoder.espacement * encoder.fs))
+        expected_size = (
+            len(binary) * symbols_per_letter * symbol_samples
+            + (len(binary) - 1) * silence_samples
+        )
+
+        self.assertEqual(audio.shape, (expected_size,))
+        self.assertEqual(audio.dtype, np.float32)
+        self.assertGreaterEqual(float(audio.min()), -1.0)
+        self.assertLessEqual(float(audio.max()), 1.0)
 
 if __name__ == "__main__":
     unittest.main()
