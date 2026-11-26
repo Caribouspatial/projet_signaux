@@ -7,10 +7,12 @@ import unittest
 import wave
 
 import numpy as np
+from scipy.io import wavfile
 
 import decoder
 import encoder
 import jouer
+import nettoyer
 
 
 class EncoderTests(unittest.TestCase):
@@ -102,6 +104,46 @@ class WavAndDecoderTests(unittest.TestCase):
     def test_decoder_rejects_non_power_of_two(self):
         with self.assertRaises(ValueError):
             decoder.decoder("missing.wav", 6)
+
+
+class CleanerTests(unittest.TestCase):
+    def test_silence_is_left_unchanged(self):
+        sample_rate = 44100
+        silence = np.zeros(sample_rate, dtype=np.int16)
+
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "silence.wav")
+            wavfile.write(wav_path, sample_rate, silence)
+            with open(wav_path, "rb") as fichier:
+                original = fichier.read()
+
+            self.assertFalse(nettoyer.nettoyer(wav_path))
+
+            with open(wav_path, "rb") as fichier:
+                self.assertEqual(fichier.read(), original)
+            self.assertFalse(os.path.exists(wav_path + ".tmp.wav"))
+
+    def test_active_tone_is_trimmed_and_normalized(self):
+        sample_rate = 44100
+        temps = np.arange(int(1.2 * sample_rate)) / sample_rate
+        signal = np.zeros(len(temps), dtype=np.int16)
+        actif = (temps >= 0.3) & (temps < 0.8)
+        signal[actif] = (
+            12000 * np.sin(2 * np.pi * 1800 * temps[actif])
+        ).astype(np.int16)
+
+        with tempfile.TemporaryDirectory() as dossier:
+            wav_path = os.path.join(dossier, "recording.wav")
+            wavfile.write(wav_path, sample_rate, signal)
+
+            self.assertTrue(nettoyer.nettoyer(wav_path))
+
+            output_rate, cleaned = wavfile.read(wav_path)
+            self.assertEqual(output_rate, sample_rate)
+            self.assertEqual(cleaned.dtype, np.int16)
+            self.assertLess(len(cleaned), len(signal))
+            self.assertGreater(int(np.max(np.abs(cleaned))), 20000)
+            self.assertFalse(os.path.exists(wav_path + ".tmp.wav"))
 
 
 if __name__ == "__main__":
