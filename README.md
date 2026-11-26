@@ -28,6 +28,14 @@ Le programme principal peut encore etre lance sans interface graphique :
 python main.py
 ```
 
+### Interface graphique
+
+Lancer l'application avec :
+
+```bash
+python gui.py
+```
+
 ## Tests unitaires
 
 Executer tous les tests :
