@@ -32,7 +32,7 @@ def _traiter(data, fs, decalage_ms=0.0): # Renvoie le signal nettoyé (int16) ou
     filtre = sosfiltfilt(sos, data)
 
     #enveloppe et seuil
-    env = _lisser(np.abs(hilbert(filtre)), _ms(5, fs))
+    env = _lisser(np.abs(hilbert(filtre)), _ms(10, fs))
     plancher = np.percentile(env, 20)   # bruit de fond
     crete = np.percentile(env, 99)      # niveau des sons
     if crete < CRETE_MIN or crete < RAPPORT_MIN * max(plancher, 1e-9):
@@ -65,7 +65,7 @@ def _traiter(data, fs, decalage_ms=0.0): # Renvoie le signal nettoyé (int16) ou
     palier_f = np.median(env[max(0, f1 - _ms(150, fs)): max(1, f1 - _ms(70, fs))])
     debut_z = max(0, f1 - _ms(70, fs))
     zone = env[debut_z: f1 + _ms(40, fs)]
-    t1 = debut_z + int(len(zone) - 1 - np.argmax((zone > 0.5 * palier_f)[::-1]))
+    t1 = debut_z + int(len(zone) - 1 - np.argmax((zone > 0.6 * palier_f)[::-1]))
     t1 = min(len(filtre), t1 + _ms(100, fs))  # marge : le dernier son (500 Hz) est faible
 
     # mise à zéro des silences (fondu de 10 ms)
