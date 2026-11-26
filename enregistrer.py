@@ -3,6 +3,8 @@ import threading
 import numpy as np
 import sounddevice as sd
 
+import nettoyer
+
 SAMPLE_RATE = 44100  # Fréquence d'échantillonnage (Hz)
 CHANNELS = 1         # 1 = mono, 2 = stéréo
 DURATION = 60        # Durée maximale en secondes
@@ -49,3 +51,6 @@ def enregistrer():
         wf.setframerate(SAMPLE_RATE)
         wf.writeframes(audio_data.tobytes())
     print(f"Fichier sauvegardé : {OUTPUT_FILE}")
+
+    # filtre + recalage pour le décodeur (fichier laissé intact si aucun son n'est détecté)
+    nettoyer.nettoyer(OUTPUT_FILE)
