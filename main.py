@@ -17,7 +17,7 @@ if choix == "1":
     print(f"message.wav écrit : {len(array)} échantillons, {len(array) / fs:.1f} s")
 
 elif choix == "2":
-    choix2 = input('\nTaper "1" pour voir le message, "2" pour enregistrement')
+    choix2 = input('\nTaper "1" pour voir le message, "2" pour enregistrement : ')
     if choix2 == "1":
         valence = int(input("Valence utilisée à l'encodage (2, 4, 8, 16, 32) : "))
         print("Texte décodé :", decoder.decoder("messages/message.wav", valence))
@@ -30,16 +30,14 @@ elif choix == "3":
 
     choix2 = input('\nTaper "1" pour jouer le message, "2" pour enregistrement : ')
     if choix2 == "1":
-        valence = int(input("Valence utilisée à l'encodage (2, 4, 8, 16, 32) : "))
         jouer.jouer("messages/message.wav")
     elif choix2 == "2":
-        valence = int(input("Valence utilisée à l'encodage (2, 4, 8, 16, 32) : "))
         jouer.jouer("messages/enregistrement.wav")
     else:
         print('erreur, taper "1" ou "2"')
 
 elif choix == "4":
-    print("Arrêter en entrant 'Enter' ou après 40 sec")
+    #print("Arrêter en entrant 'Enter' ou après 40 sec")
     enregistrer.enregistrer()
 else:
     print('Erreur : taper 1, 2, 3 ou 4')
