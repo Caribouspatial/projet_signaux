@@ -17,7 +17,7 @@ if choix == "1":
     print(f"message.wav écrit : {len(array)} échantillons, {len(array) / fs:.1f} s")
 
 elif choix == "2":
-    choix2 = input('\nTaper "1" pour voir le message, "2" pour enregistrement')
+    choix2 = input('\nTaper "1" pour voir le message, "2" pour enregistrement : ')
     if choix2 == "1":
         valence = int(input("Valence utilisée à l'encodage (2, 4, 8, 16, 32) : "))
         print("Texte décodé :", decoder.decoder("messages/message.wav", valence))
