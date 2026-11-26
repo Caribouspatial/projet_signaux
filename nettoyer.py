@@ -52,15 +52,15 @@ def _traiter(data, fs, decalage_ms=0.0): # Renvoie le signal nettoyé (int16) ou
     if len(debuts) == 0:
         return None
 
-    # 3) début précis du 1er son : passage à 50 % du palier
+    # 3) début précis du 1er son : passage à 60 % du palier
     d0 = debuts[0]
     palier = np.median(env[d0 + _ms(15, fs): d0 + _ms(45, fs)])
     depart = max(0, d0 - _ms(40, fs))
     zone = env[depart: d0 + _ms(60, fs)]
-    t0 = depart + int(np.argmax(zone > 0.5 * palier)) + _ms(decalage_ms, fs)
+    t0 = depart + int(np.argmax(zone > 0.6 * palier)) + _ms(decalage_ms, fs)
     t0 = max(0, t0)
 
-    # fin précise du dernier son : dernier passage à 50 % du palier
+    # fin précise du dernier son : dernier passage à 60 % du palier
     f1 = fins[-1]
     palier_f = np.median(env[max(0, f1 - _ms(150, fs)): max(1, f1 - _ms(70, fs))])
     debut_z = max(0, f1 - _ms(70, fs))
@@ -68,11 +68,11 @@ def _traiter(data, fs, decalage_ms=0.0): # Renvoie le signal nettoyé (int16) ou
     t1 = debut_z + int(len(zone) - 1 - np.argmax((zone > 0.5 * palier_f)[::-1]))
     t1 = min(len(filtre), t1 + _ms(100, fs))  # marge : le dernier son (500 Hz) est faible
 
-    # mise à zéro des silences (fondu de 5 ms)
+    # mise à zéro des silences (fondu de 10 ms)
     masque = np.zeros(len(filtre))
     for a, b in zip(debuts, fins):
         masque[max(0, a - _ms(25, fs)): b + _ms(120, fs)] = 1.0
-    masque = _lisser(masque, _ms(5, fs))
+    masque = _lisser(masque, _ms(10, fs))
     propre = (filtre * masque)[t0:t1]
     if len(propre) == 0 or np.max(np.abs(propre)) == 0:
         return None
@@ -82,8 +82,7 @@ def _traiter(data, fs, decalage_ms=0.0): # Renvoie le signal nettoyé (int16) ou
     return propre.astype(np.int16), len(debuts), t0 / fs, t1 / fs
 
 
-def nettoyer(fichier, decalage_ms=0.0):
-    """Nettoie `fichier` sur place. Renvoie True si modifié, False si aucun son (fichier intact)."""
+def nettoyer(fichier, decalage_ms=0.0): # Nettoie `fichier` sur place. Renvoie True si modifié, False si aucun son (fichier intact).
     fs, data = wavfile.read(fichier)
     resultat = _traiter(data, fs, decalage_ms)
     if resultat is None:
