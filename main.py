@@ -37,7 +37,7 @@ elif choix == "3":
         print('erreur, taper "1" ou "2"')
 
 elif choix == "4":
-    print("Arrêter en entrant 'Enter' ou après 40 sec")
+    #print("Arrêter en entrant 'Enter' ou après 40 sec")
     enregistrer.enregistrer()
 else:
     print('Erreur : taper 1, 2, 3 ou 4')
