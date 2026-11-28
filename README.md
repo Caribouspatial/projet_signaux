@@ -47,6 +47,9 @@ python unitest.py
 ### main.py :
 Fichier principal qui centralise tous les autres dans une interface de terminal à choix multiple.
 
+### gui.py :
+Interface graphique Tkinter regroupant en quatre onglets l'encodage de texte en M-FSK, le décodage de fichiers `.wav`, la lecture audio et l'enregistrement au micro avec nettoyage automatique.
+
 ### encoder.py :
 Encode un texte saisi par l'utilisateur en signal audio M-FSK et l'enregistre dans `messages/message.wav` (voir `decoder.py`).
 
