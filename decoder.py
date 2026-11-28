@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import argparse
 import math
 import numpy as np
@@ -28,6 +26,23 @@ def frequence_dominante(segment, fs):
     return np.argmax(spectre) * fs / n_fft
 
 
+def _trouver_debut(data, fs, nb_symbole):
+    """Cherche le début réel du premier son.
+
+    `data` peut commencer exactement sur la première lettre (fichier encodé directement),
+    ou être précédé d'un peu de silence / bruit (enregistrement micro, fichier passé par
+    nettoyer.py qui laisse volontairement du vide avant et après le message). Sans ce
+    repérage, le décodeur suppose que la lettre 0 commence à l'échantillon 0, ce qui
+    décale toute la suite et finit par lire au-delà de la fin du fichier.
+    """
+    fenetre = max(1, nb_symbole // 4)
+    energie = np.convolve(data ** 2, np.ones(fenetre) / fenetre, mode="same")
+    bruit = np.median(energie[: max(fenetre, int(0.05 * fs))])  # 50 ms initiales = bruit de fond supposé
+    seuil = max(bruit * 8, np.max(energie) * 0.05, 1e-9)
+    depasse = np.flatnonzero(energie > seuil)
+    return int(depasse[0]) if len(depasse) else 0
+
+
 def decoder(fichier, valence):
     k = int(round(math.log2(valence)))
     if valence < 2 or 2 ** k != valence:
@@ -45,12 +60,18 @@ def decoder(fichier, valence):
     pas = nb_lettre + int(round(ESPACEMENT * fs))  # début d'une lettre -> début de la suivante
     marge = int(0.2 * nb_symbole)  # on ignore les bords (fondus, transitions)
 
-    nb_lettres = int(round((len(data) + int(round(ESPACEMENT * fs))) / pas))
+    debut0 = _trouver_debut(data, fs, nb_symbole)  # position du tout premier son dans le fichier
+    disponible = len(data) - debut0
+    nb_lettres = max(0, int(round((disponible + int(round(ESPACEMENT * fs))) / pas)))
+    # sécurité : ne jamais lire au-delà de la fin du fichier (silence coupé trop court, estimation optimiste...)
+    while nb_lettres > 0 and debut0 + (nb_lettres - 1) * pas + nb_lettre > len(data):
+        nb_lettres -= 1
+
     texte = ""
     for i in range(nb_lettres):
         bits = ""
         for j in range(nb_symboles):
-            debut = i * pas + j * nb_symbole
+            debut = debut0 + i * pas + j * nb_symbole
             segment = data[debut + marge: debut + nb_symbole - marge]
             f = frequence_dominante(segment, fs)
             indice = int(np.argmin(np.abs(frequences - f)))  # fréquence théorique la plus proche
@@ -58,7 +79,3 @@ def decoder(fichier, valence):
         bits = bits[:8]  # retire le remplissage de 0 (valence 8 ou 32)
         texte += chr(int(bits, 2))
     return texte
-
-
-if __name__ == "__main__":
-    print(decoder(args.fichier, args.valence))
