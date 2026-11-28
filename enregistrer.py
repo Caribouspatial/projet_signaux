@@ -4,7 +4,7 @@ import numpy as np
 import sounddevice as sd
 import nettoyer
 
-SAMPLE_RATE = 44000  # Fréquence d'échantillonnage (Hz)
+SAMPLE_RATE = 44100  # Fréquence d'échantillonnage (Hz)
 CHANNELS = 1         # 1 = mono, 2 = stéréo
 DURATION = 60        # Durée maximale en secondes
 OUTPUT_FILE = "messages/enregistrement.wav"

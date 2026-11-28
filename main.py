@@ -3,7 +3,7 @@ import encoder, decoder, jouer, enregistrer
 
 Fmin = 500 # Hz
 Fmax = 8000 # Hz
-fs = 44000 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
+fs = 44100 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
 def main():
     while True:
         choix = input('\nTaper "1" pour encoder, "2" pour décoder, "3" pour jouer, "4" pour enregistrer et 5 pour quitter: ')

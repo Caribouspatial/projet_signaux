@@ -10,7 +10,7 @@ Fmin = 500 # Hz
 Fmax = 8000 # Hz
 espacement = 0.5 # seconde : silence entre deux lettres
 Ts = 0.06 # seconde : durée d'UN symbole (fixe, indépendante de la valence)
-fs = 44000 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
+fs = 44100 # Hz : fréquence d'échantillonnage du .wav (doit être > 2 x Fmax)
 amplitude = 0.8 # volume (0 à 1)
 rampe = 0.005 # seconde : fondu au début et à la fin de chaque tonalité (évite les clics)
 
@@ -22,7 +22,7 @@ def demandeTexte():
     if len(texte) == 0:
         print("Le texte est vide. Veuillez réessayer.")
         return demandeTexte()
-    if len(texte) > 128:
+    if len(texte) > 256:
         print("Le texte est trop long. Veuillez entrer un texte de 256 caractères maximum.")
         return demandeTexte()
     if any(ord(c) > 255 for c in texte):
