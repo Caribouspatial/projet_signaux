@@ -56,7 +56,7 @@ def _traiter(data, fs, decalage_ms=0.0):
     sos = butter(6, [FMIN * 0.7, haut], btype="bandpass", fs=fs, output="sos")
     filtre = sosfiltfilt(sos, data)
     env = _lisser(np.abs(hilbert(filtre)), _ms(5, fs))
-    if np.percentile(env, 99) < CRETE_MIN:
+    if np.max(env) < CRETE_MIN:
         return None
 
     # 2) trames tonales
