@@ -19,6 +19,8 @@ args, _ = parser.parse_known_args()  # ignore les arguments ajoutés par Jupyter
 
 
 def frequence_dominante(segment, fs):
+    if len(segment) == 0:
+        raise ValueError("Le segment audio est vide.")
     segment = segment * np.hanning(len(segment))
     n_fft = 1 << max(16, int(math.ceil(math.log2(len(segment)))))
     spectre = np.abs(np.fft.rfft(segment, n=n_fft))
@@ -54,7 +56,10 @@ def decoder(fichier, valence):
     disponible = len(data) - debut0
     nb_lettres = max(0, int(round((disponible + int(round(ESPACEMENT * fs))) / pas)))
     # sécurité : ne jamais lire au-delà de la fin du fichier (silence coupé trop court, estimation optimiste...)
-    while nb_lettres > 0 and debut0 + (nb_lettres - 1) * pas + nb_lettre > len(data):
+    while (
+        nb_lettres > 0
+        and debut0 + (nb_lettres - 1) * pas + nb_lettre - marge > len(data)
+    ):
         nb_lettres -= 1
 
     texte = ""
