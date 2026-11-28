@@ -61,5 +61,21 @@ Principe, pour chaque lettre i (début à t = i * (ceil(8 / k) * TS + ESPACEMENT
 Joue un .wav 16 bits et attend la fin de la lecture.
 
 ### enregistrer.py:
-
+Enregistre en brut l'entrée du micro et la fait passer par nettoyer.py avant de le sauvgarder dans enregistrement.py
 ### nettoyer.py:
+Nettoie un l'enregistrement du micro pour que decoder.py puisse mieux le lire.
+
+nettoyer(fichier) remplace le fichier par sa version nettoyée.
+Si aucun son n'est détecté, le fichier n'est PAS touché (rien n'est écrit, rien n'est copié)
+et la fonction renvoie False.
+
+Étapes (le signal n'est modifié que légèrement) :
+  1. stéréo -> mono, suppression de la composante continue
+  2. filtre passe-bande autour des fréquences utiles (FMIN..FMAX), sans déphasage
+  3. détection des lettres par "tonalité" : un son pur ressort même très faible, alors que
+     le bruit et les clics (touche Entrée) n'en ont pas
+  4. début de chaque lettre recalé précisément sur la fréquence de sa 1re tonalité
+  5. fin du message = début de la dernière lettre + durée d'une lettre (la durée d'une lettre
+     se déduit du pas entre lettres) ; complétée par du silence si l'enregistrement s'arrête trop tôt
+  6. recalage (1er son à t = 0), silences mis à zéro, chaque lettre ramenée au même volume
+     (compense le gain automatique du micro)

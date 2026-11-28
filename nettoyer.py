@@ -1,14 +1,19 @@
+"""
+
+"""
 import os
+
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 from scipy.io import wavfile
 from scipy.ndimage import maximum_filter1d, minimum_filter1d, uniform_filter1d
 from scipy.signal import butter, sosfiltfilt, hilbert
 
-# valeurs fixe
+# mêmes valeurs que decoder.py
 FMIN = 500.0
 FMAX = 8000.0
 ESPACEMENT = 0.5      # silence entre deux lettres (s), identique à l'encodeur
+
 CRETE_MIN = 100.0     # niveau absolu minimal des sons (échelle int16)
 TONALITE_MIN = 20.0   # pic du spectre / moyenne du spectre : bruit ~ 6-10, son pur >> 20
 
@@ -16,12 +21,14 @@ TONALITE_MIN = 20.0   # pic du spectre / moyenne du spectre : bruit ~ 6-10, son 
 def _ms(x, fs):
     return int(round(x * fs / 1000))
 
-#Moyenne glissante de n échantillons (temps linéaire, même pour de longs enregistrements)
+
 def _lisser(x, n):
+    """Moyenne glissante de n échantillons (temps linéaire, même pour de longs enregistrements)."""
     return uniform_filter1d(np.asarray(x, dtype=np.float64), size=max(1, n), mode="nearest")
 
-#Tonalité et fréquence du pic pour chaque trame (trame i = échantillons [i*hop, i*hop+win])
+
 def _spectres(filtre, fs, win, hop):
+    """Tonalité et fréquence du pic pour chaque trame (trame i = échantillons [i*hop, i*hop+win])."""
     trames = sliding_window_view(filtre, win)[::hop]
     f = np.fft.rfftfreq(win, 1 / fs)
     bande = (f >= FMIN * 0.8) & (f <= min(FMAX * 1.15, fs / 2 * 0.95))
@@ -34,9 +41,9 @@ def _spectres(filtre, fs, win, hop):
         pic[a:a + 2000] = f[bande][P.argmax(axis=1)]
     return tonalite, pic
 
-# Renvoie (signal int16, nb lettres, début s, fin s, complété s) ou None si aucun son
-def _traiter(data, fs, decalage_ms=0.0):
 
+def _traiter(data, fs, decalage_ms=0.0):
+    """Renvoie (signal int16, nb lettres, début s, fin s, complété s) ou None si aucun son."""
     data = data.astype(np.float64)
     if data.ndim > 1:  # stéréo -> mono
         data = data.mean(axis=1)
@@ -44,7 +51,7 @@ def _traiter(data, fs, decalage_ms=0.0):
         return None
     data = data - data.mean()
 
-    # passe-bande (zéro déphasage : ne décale pas les débuts de sons)
+    # 1) passe-bande (zéro déphasage : ne décale pas les débuts de sons)
     haut = min(FMAX * 1.15, fs / 2 * 0.95)
     sos = butter(6, [FMIN * 0.7, haut], btype="bandpass", fs=fs, output="sos")
     filtre = sosfiltfilt(sos, data)
@@ -52,7 +59,7 @@ def _traiter(data, fs, decalage_ms=0.0):
     if np.percentile(env, 99) < CRETE_MIN:
         return None
 
-    # trames tonales
+    # 2) trames tonales
     win = 1 << int(round(np.log2(0.023 * fs)))   # ~ 23 ms
     hop = _ms(5, fs)
     if len(filtre) < win + hop:
@@ -87,7 +94,7 @@ def _traiter(data, fs, decalage_ms=0.0):
     if len(trames_debut) == 0:
         return None
 
-    # début précis de chaque lettre : filtre étroit autour de la fréquence de son 1er son
+    # 3) début précis de chaque lettre : filtre étroit autour de la fréquence de son 1er son
     def debut_precis(s):
         cs = s * hop
         i = min(s + win // hop + 2, len(pic) - 1)       # trame entièrement dans le 1er symbole
@@ -139,7 +146,7 @@ def _traiter(data, fs, decalage_ms=0.0):
         filtre = np.r_[filtre, np.zeros(complete)]
         env = np.r_[env, np.zeros(complete)]
 
-    # gain par lettre (même volume pour toutes) ; silences à zéro, fondus de 5 ms
+    # 4) gain par lettre (même volume pour toutes) ; silences à zéro, fondus de 5 ms
     gain = np.zeros(len(filtre))
     for a0, b0 in fenetres:
         a0, b0 = max(0, a0), min(len(filtre), b0)
@@ -153,12 +160,13 @@ def _traiter(data, fs, decalage_ms=0.0):
     if len(propre) == 0 or np.max(np.abs(propre)) == 0:
         return None
 
-    # normalisation (crête à 90 % du maximum int16)
+    # 5) normalisation (crête à 90 % du maximum int16)
     propre = propre * (0.9 * 32767 / np.max(np.abs(propre)))
     return propre.astype(np.int16), len(debuts), t0 / fs, t1 / fs, complete / fs
 
-# Nettoie `fichier` sur place. Renvoie True si modifié, False si aucun son (fichier intact)
+
 def nettoyer(fichier, decalage_ms=0.0):
+    """Nettoie `fichier` sur place. Renvoie True si modifié, False si aucun son (fichier intact)."""
     fs, data = wavfile.read(fichier)
     resultat = _traiter(data, fs, decalage_ms)
     if resultat is None:
