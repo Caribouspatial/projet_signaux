@@ -1,3 +1,4 @@
+Projet réalisé par : AERTS Justin · GROLAUX Baptiste · SOMERS Victor · VERGAUWEN Sean
 # Projet signaux
 ## Principes
 Ce projet encode du texte en signaux audio M-FSK, puis peut décoder un message
