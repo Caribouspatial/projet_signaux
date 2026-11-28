@@ -46,7 +46,15 @@ python unitest.py
 
 ### main.py :
 Fichier principal qui centralise tous les autres dans une interface de terminal à choix multiple.
+
 ### encoder.py :
+Encode un texte saisi par l'utilisateur en signal audio M-FSK et l'enregistre dans `messages/message.wav` (voir `decoder.py`).
+
+Principe, pour chaque lettre i (début à t = i * (ceil(8 / k) * Ts + espacement)) :
+1. on convertit le caractère en ASCII binaire sur 8 bits, puis on le découpe en ceil(8 / k) groupes de k bits (complétés par des 0 à droite si nécessaire) -> son indice
+2. on associe chaque indice à sa fréquence dans linspace(Fmin, Fmax, valence)
+3. pour chaque tonalité, on génère une sinusoïde de durée Ts échantillonnée à fs, avec un fondu cosinus (rampe) au début et à la fin pour éviter les clics
+4. on concatène les tonalités de la lettre, puis on assemble toutes les lettres séparées par un silence de durée espacement avant d'exporter le signal en `.wav` 16 bits mono
 
 ### decoder.py :
 Décode un fichier `message.wav` encodé en M-FSK (voir `encoder.py`) et affiche le texte.
